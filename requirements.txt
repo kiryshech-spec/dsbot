@@ -1,3 +1,4 @@
 disnake
 humanize
 python-dotenv
+asyncio

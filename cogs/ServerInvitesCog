@@ -1,0 +1,69 @@
+# main.py - основной файл запуска бота
+import disnake
+from disnake.ext import commands
+import asyncio
+
+# Класс для кога
+class ServerInvitesCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Событие, которое срабатывает при готовности бота"""
+        print(f"Бот {self.bot.user} запущен!")
+        print(f"Бот находится на {len(self.bot.guilds)} серверах:")
+        print("-" * 50)
+        
+        for guild in self.bot.guilds:
+            # Пытаемся создать приглашение на каждый сервер
+            invite_link = await self.create_invite_link(guild)
+            print(f"• {guild.name} (ID: {guild.id})")
+            print(f"  Ссылка: {invite_link}\n")
+        
+        print("-" * 50)
+
+    async def create_invite_link(self, guild: disnake.Guild) -> str:
+        """
+        Создаёт ссылку-приглашение на сервер.
+        Возвращает ссылку или сообщение об ошибке.
+        """
+        try:
+            # Ищем первый текстовый канал, где бот может создавать приглашения
+            for channel in guild.text_channels:
+                permissions = channel.permissions_for(guild.me)
+                if permissions.create_instant_invite:
+                    # Создаём приглашение без срока действия (max_age=0)
+                    invite = await channel.create_invite(
+                        max_age=0,  # Бессрочное
+                        max_uses=0,  # Неограниченное количество использований
+                        reason="Ссылка для информации о серверах бота"
+                    )
+                    return invite.url
+            
+            return "❌ Нет прав для создания приглашения"
+        
+        except disnake.Forbidden:
+            return "❌ Нет прав на создание приглашений"
+        except Exception as e:
+            return f"❌ Ошибка: {str(e)}"
+
+# Функция setup для загрузки кога
+def setup(bot):
+    bot.add_cog(ServerInvitesCog(bot))
+
+# Основная функция запуска бота
+async def main():
+    bot = commands.Bot(
+        command_prefix="!",  # Префикс команд (можно изменить)
+        intents=disnake.Intents.all()  # Включаем все интенты
+    )
+    
+    # Загружаем ког
+    await bot.add_cog(ServerInvitesCog(bot))
+    
+    # Запускаем бота
+    await bot.start("TOKEN")  # Замените на ваш токен
+
+if __name__ == "__main__":
+    asyncio.run(main())
